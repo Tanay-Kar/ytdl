@@ -14,11 +14,11 @@ That's where YTDL comes in. It is a lightweight Python module that provides a si
 
 ## Installation
 ### Requirements
-- ffmpeg 
+- ffmpeg [see this](#notes)
 - git (for installation of dependencies)
 
 #### Windows
-- Install the appropriate git from https://git-scm.com/download/win <br>
+- Install git from https://git-scm.com/download/win
 - Install ffmpeg from https://ffmpeg.org/download.html#build-windows
 - Clone this repository
 ```bash
@@ -59,3 +59,6 @@ for example
 python ytdl.py https://www.youtube.com/watch?v=lJvRohYSrZM
 ```
 If all the dependencies were installed correctly , this should show the details of the link and show further instructions to download
+
+## Notes
+- A FFmpeg binary (for windows and linux) is included in the package as a backup solution for situations where an existing FFmpeg installation is not available, but a system-wide installation is still recommended for optimal performance.
