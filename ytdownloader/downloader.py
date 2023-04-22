@@ -13,7 +13,6 @@ from tempfile import TemporaryDirectory
 import requests
 
 
-
 class YoutubeDownloaderException(Exception):
     """Custom exception class."""
 
@@ -44,6 +43,19 @@ class YoutubeDownloader:
         # CLI = Command Line Interface (for pretty interface), API = Application Programming Interface (for module use), RESPONSE = Response Output (for program interface)
         self.apptype = apptype
 
+    def assign_ffmpeg(self):
+        '''Assign ffmpeg binary'''
+        if subprocess.call(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) == 0:
+            self.vprint("FFMPEG not found. Using backup binaries...")
+            if sys.platform == "win32":
+                self.ffmpeg_bin = os.path.join(os.path.dirname(
+                    os.path.realpath(__file__)), 'ffmpeg_binaries', 'win', 'ffmpeg.exe')
+            elif sys.platform == "linux":
+                self.ffmpeg_bin = os.path.join(os.path.dirname(
+                    os.path.realpath(__file__)), 'ffmpeg_binaries', 'linux', 'ffmpeg')
+        else:
+            self.ffmpeg_bin = "ffmpeg"
+
     def create_temp(self):
         '''Create a temp folder'''
         cwd = os.getcwd()
@@ -58,6 +70,7 @@ class YoutubeDownloader:
         return dir
 
     def check_args(self):
+        '''Checking validity of arguments'''
         if self.apptype not in ["CLI", "API", "RESPONSE"]:
             raise self.Error("Invalid app_type")
 
@@ -71,7 +84,8 @@ class YoutubeDownloader:
         '''Setup the class'''
         self.vprint("Temp Folder : CLEARED")
         # One-Liner to Check Internet Connection:
-        isinternet = True if requests.get("https://www.youtube.com").status_code else False
+        isinternet = True if requests.get(
+            "https://www.youtube.com").status_code else False
         if not isinternet:
             raise self.Error("No Internet Connection")
 
@@ -86,14 +100,14 @@ class YoutubeDownloader:
             raise self.Error(f'Internal Error .\n{e}')
 
         self.yt.register_on_progress_callback(self.on_ytprogress)
-        
+
         self.temp_dir = self.create_temp()
         self.vprint("Temp Folder : CREATED")
         self.get_details()
 
     def clear_temp(self):
         '''Clear the temp folder'''
-        
+
         try:
             shutil.rmtree(self.temp_dir)
         except AttributeError:
@@ -235,6 +249,8 @@ class YoutubeDownloader:
         resolution : resolution of the video
         location : location to save the video (default : temp)
         '''
+        self.assign_ffmpeg()
+
         if resolution in self.res_list:
 
             # print("With Audio" if self.yt.streams.filter(resolution=resolution).first().is_progressive else "Without Audio")
@@ -271,36 +287,30 @@ class YoutubeDownloader:
                 self.vprint("Video Download : OK")
                 # PROCESSING
                 # check if ffmpeg is installed
-                if subprocess.call(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) == 0:
-                    # ffmpeg is installed
-                    self.vprint("ffmpeg : INSTALLED")
-                    self.current = "F"
+                # ffmpeg is installed
+                self.vprint("ffmpeg : INSTALLED")
+                self.current = "F"
+                cmd = [self.ffmpeg_bin, "-i", f"{self.temp_dir}/video.{ext}", "-i",
+                       f"{self.temp_dir}/audio.{aud_stream.mime_type.split('/')[1]}", "-c", "copy", "-y", f"{self.temp_dir}/output.mp4"]
+                ff = FfmpegProgress(cmd)
+                self.vprint("ffmpeg : STARTED")
+                try:
+                    for progress in ff.run_command_with_progress():
+                        self.show_progress(progress/100)
+                    self.vprint("ffmpeg : DONE")
+                    if location != None:
+                        self.move_file(location)
+                        self.vprint("File Moved : OK")
+                    else:
+                        self.move_file(os.path.join(
+                            (os.path.expanduser("~")), "Downloads"))
+                        self.vprint("File Moved : OK")
+                except KeyboardInterrupt:
+                    raise self.Error("Process interrupted by user.")
+                except RuntimeError:
+                    raise self.Error(
+                        "An error occurred while processing the video.")
 
-                    cmd = ["ffmpeg", "-i", f"{self.temp_dir}/video.{ext}", "-i",
-                           f"{self.temp_dir}/audio.{aud_stream.mime_type.split('/')[1]}", "-c", "copy", "-y", f"{self.temp_dir}/output.mp4"]
-
-                    ff = FfmpegProgress(cmd)
-                    self.vprint("ffmpeg : STARTED")
-                    try:
-                        for progress in ff.run_command_with_progress():
-                            self.show_progress(progress/100)
-
-                        self.vprint("ffmpeg : DONE")
-                        if location != None:
-                            self.move_file(location)
-                            self.vprint("File Moved : OK")
-                        else:
-                            self.move_file(os.path.join(
-                                (os.path.expanduser("~")), "Downloads"))
-                            self.vprint("File Moved : OK")
-
-                    except KeyboardInterrupt:
-                        raise self.Error("Process interrupted by user.")
-                    except RuntimeError:
-                        raise self.Error(
-                            "An error occurred while processing the video.")
-                else:
-                    raise self.Error("Module ffmpeg is not installed.")
             else:
                 # PROGRESSIVE STREAM - audio and video in same file
 
@@ -319,37 +329,31 @@ class YoutubeDownloader:
                 self.vprint("Video Download : OK")
 
                 # check if ffmpeg is installed
-                if subprocess.call(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) == 0:
-                    self.vprint("ffmpeg : INSTALLED")
+                self.vprint("ffmpeg : INSTALLED")
+                self.current = "F"
+                cmd = [
+                    self.ffmpeg_bin, "-i", f"{self.temp_dir}/video.{ext}", "-c", "copy", "-y", f"{self.temp_dir}/output.mp4"]
+                ff = FfmpegProgress(cmd)
+                self.vprint("ffmpeg : STARTED")
+                try:
+                    for progress in ff.run_command_with_progress():
+                        self.show_progress(progress/100)
+                    self.vprint("ffmpeg : DONE")
+                    if location != None:
+                        self.move_file(location)
+                        self.vprint("File Moved : OK")
 
-                    self.current = "F"
-                    cmd = [
-                        "ffmpeg", "-i", f"{self.temp_dir}/video.{ext}", "-c", "copy", "-y", f"{self.temp_dir}/output.mp4"]
+                    else:
+                        self.move_file(os.path.join(
+                            (os.path.expanduser("~")), "Downloads"))
+                        self.vprint("File Moved : OK")
 
-                    ff = FfmpegProgress(cmd)
-                    self.vprint("ffmpeg : STARTED")
-                    try:
-                        for progress in ff.run_command_with_progress():
-                            self.show_progress(progress/100)
+                except KeyboardInterrupt:
+                    raise self.Error("Process interrupted by user.")
+                except RuntimeError:
+                    raise self.Error(
+                        "An error occurred while processing the video.")
 
-                        self.vprint("ffmpeg : DONE")
-
-                        if location != None:
-                            self.move_file(location)
-                            self.vprint("File Moved : OK")
-                            
-                        else:
-                            self.move_file(os.path.join(
-                                (os.path.expanduser("~")), "Downloads"))
-                            self.vprint("File Moved : OK")
-                            
-                    except KeyboardInterrupt:
-                        raise self.Error("Process interrupted by user.")
-                    except RuntimeError:
-                        raise self.Error(
-                            "An error occurred while processing the video.")
-                else:
-                    raise self.Error("Module ffmpeg is not installed.")
             self.clear_temp()
         else:
             raise self.Error("Invalid resolution selected.")

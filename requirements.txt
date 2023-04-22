@@ -3,7 +3,7 @@ charset-normalizer==3.1.0
 colorama==0.4.6
 ffmpeg-progress-yield==0.7.2
 idna==3.4
-git+https://github.com/nficano/pytube
+pytube @ git+https://github.com/nficano/pytube@96315dff218c3c5c4621997a5587f9d677774b97
 requests==2.28.2
 typing_extensions==4.5.0
 urllib3==1.26.15
