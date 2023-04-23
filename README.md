@@ -59,6 +59,16 @@ for example
 python ytdl.py https://www.youtube.com/watch?v=lJvRohYSrZM
 ```
 If all the dependencies were installed correctly , this should show the details of the link and show further instructions to download
+<p align="center">
+<img src=https://user-images.githubusercontent.com/93914273/233820691-c6d9902d-e82f-4a90-987e-659b471c5ed1.png>
+</p>
 
+Choose the appropriate resolution and download location to proceed with the download. By default the video will be downloaded to the user's Downloads folder.
+<p align="center">
+<img src=https://user-images.githubusercontent.com/93914273/233820815-8806bc55-478a-4735-849a-afdf159c233f.png>
+</p>
+
+## Quick start with use as a module
+This module can also be used as a 
 ## Notes
 - A FFmpeg binary (for windows and linux) is included in the package as a backup solution for situations where an existing FFmpeg installation is not available, but a system-wide installation is still recommended for optimal performance.
