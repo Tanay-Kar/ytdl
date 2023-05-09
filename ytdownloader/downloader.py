@@ -45,14 +45,26 @@ class YoutubeDownloader:
 
     def assign_ffmpeg(self):
         '''Assign ffmpeg binary'''
-        if subprocess.call(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) == 0:
+        try:
+            subprocess.call(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        except Exception as e:
             self.vprint("FFMPEG not found. Using backup binaries...")
             if sys.platform == "win32":
-                self.ffmpeg_bin = os.path.join(os.path.dirname(
-                    os.path.realpath(__file__)), 'ffmpeg_binaries', 'win', 'ffmpeg.exe')
+                binary = ("win","ffmpeg.exe")
             elif sys.platform == "linux":
-                self.ffmpeg_bin = os.path.join(os.path.dirname(
-                    os.path.realpath(__file__)), 'ffmpeg_binaries', 'linux', 'ffmpeg')
+                binary = ("linux","ffmpeg")
+            
+            elif sys.platform == "darwin":
+                binary = ("mac","ffmpeg")
+            
+            self.vprint('Using binary at '+os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), 'ffmpeg_binaries', binary[0], binary[1]))
+            self.ffmpeg_bin = os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), 'ffmpeg_binaries', binary[0], binary[1])
+            try:
+                subprocess.call([self.ffmpeg_bin, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            except FileNotFoundError:
+                raise self.Error("FFMPEG binary not found. Please download the appropriate binary from the github page.\nhttps://github.com/Tanay-Kar/ytdl")        
         else:
             self.ffmpeg_bin = "ffmpeg"
 
